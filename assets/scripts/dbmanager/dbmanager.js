@@ -7,7 +7,7 @@ importPackage(Packages.java.lang);
 
 
 	MainFrame.addFunction("","dbmanager",null);
-	MainFrame.getCommandHandler().execute("include \"dbmanager open;dbmanager_table.js; opens the table\"");
+	MainFrame.getCommandHandler().execute("include \"dbmanager open;dbmanager/dbmanager_table.js; opens the table\"");
 	
 	MainFrame.addFunction("dbmanager","open_combo", new Runnable(){	
 		run: function(){

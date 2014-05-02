@@ -11,7 +11,7 @@ importPackage(Packages.gc.server.gui.views);
 	var meny = GUIHandler.getViewById("menubar.top.file");
 	var item = GUIFactory.menuitem("menubar.top.file.settings","Settings","execute \"settings.js\"");
 	meny.add(item);
-	item = GUIFactory.menuitem("menubar.top.file.settings","Database Manager","execute \"dbmanager.js\"");
+	item = GUIFactory.menuitem("menubar.top.file.settings","Database Manager","execute \"dbmanager/dbmanager.js\"");
 	meny.add(item);
 	
 	

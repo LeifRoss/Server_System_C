@@ -10,31 +10,37 @@ importPackage(Packages.gc.server.database);
 
 /*
 	Request Handler for School Project
+	- by Leif Andreas Rudlang
 */
 
+
+// reference database tables
 var images = DBHandler.get("images");
 var category = DBHandler.get("category");
 var comments = DBHandler.get("comments");
 var tags = DBHandler.get("tags");
 var metadata_table = DBHandler.get("metadata");
 
-
-
-
+// create and override post/get on a DynamicRequestHandler.
 var handler = new DynamicRequestHandler(){
 
+	// HTTP GET
 	onGET: function(request, response, context){
 		handler.serveFile(request, response);
 	},
+	// HTTP POST
 	onPOST: function(request, response, context){
 	
 		response.setStatusCode(HttpStatus.SC_OK);	
+		
+		// Parse the post request
 		var POST = new PostHandler(request);
 		var response_set = false;
 		
-		if(POST.isset("function")){
-		
+		// check if the request has specified a function
+		if(POST.isset("function")){		
 	
+			// switch/case to execute selected function
 			switch(String(POST.post("function"))){
 			
 				case "search images":
@@ -133,18 +139,103 @@ var handler = new DynamicRequestHandler(){
 	
 		}
 		
+		// return error if no other response was set
 		if(!response_set){
 			var entity = new NStringEntity("error", ContentType.create("text/plain", "UTF-8"));	
 			response.setEntity(entity);		
 		}		
 				
-				
+		// clear memory from the parser
 		POST.clear();
 	}
 
 };
 
 
+
+
+//// TAG FUNCTIONS ////
+
+/** Return all tags on a selected image
+*/
+function getTags(POST,response){
+
+	if(POST.isset("id")){
+
+		var id = POST.post("id");
+	
+		var result = tags.query("get",id);
+		var entity = new NStringEntity(DBTable.toCSV(result), ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+					
+		}else{
+		
+		var entity = new NStringEntity("error", ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+		}
+
+}
+
+
+/** Delete a tag
+*/
+function deleteTag(POST,response){
+
+	if(POST.isset("id")){
+
+		var id = POST.post("id");
+	
+		tags.update("delete tag",id);
+		var entity = new NStringEntity("true", ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+					
+		}else{
+		
+		var entity = new NStringEntity("false", ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+		}
+
+}
+
+
+/** Create a tag on a image
+*/
+function createTag(POST,response){
+
+	if(POST.isset("id") && POST.isset("data")){
+
+		var id = POST.post("id");
+		var data = POST.post("data");
+	
+		tags.update("create",id,data);
+		var entity = new NStringEntity("true", ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+					
+		}else{
+		
+		var entity = new NStringEntity("false", ContentType.create("text/plain", "UTF-8"));	
+		response.setEntity(entity);	
+		}
+
+}
+
+
+//// CATEGORY FUNCTIONS ////
+
+
+/** Return all categories
+*/
+function getAllCategories(POST,response){
+
+					var result = category.query("get all");
+					var entity = new NStringEntity(DBTable.toCSV(result), ContentType.create("text/plain", "UTF-8"));	
+					response.setEntity(entity);	
+
+}
+
+
+/** Delete a category
+*/
 function deleteCategory(POST, response){
 
 	if(POST.isset("id")){	
@@ -162,6 +253,8 @@ function deleteCategory(POST, response){
 }
 
 
+/** Create a category
+*/
 function createCategory(POST, response){
 
 	if(POST.isset("name")){
@@ -186,77 +279,10 @@ function createCategory(POST, response){
 }
 
 
+//// COMMENT FUNCTIONS ////
 
-
-function getTags(POST,response){
-
-	if(POST.isset("id")){
-
-		var id = POST.post("id");
-	
-		var result = tags.query("get",id);
-		var entity = new NStringEntity(DBTable.toCSV(result), ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-					
-		}else{
-		
-		var entity = new NStringEntity("error", ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-		}
-
-}
-
-function deleteTag(POST,response){
-
-	if(POST.isset("id")){
-
-		var id = POST.post("id");
-	
-		tags.update("delete tag",id);
-		var entity = new NStringEntity("true", ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-					
-		}else{
-		
-		var entity = new NStringEntity("false", ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-		}
-
-}
-
-function createTag(POST,response){
-
-	if(POST.isset("id") && POST.isset("data")){
-
-		var id = POST.post("id");
-		var data = POST.post("data");
-	
-		tags.update("create",id,data);
-		var entity = new NStringEntity("true", ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-					
-		}else{
-		
-		var entity = new NStringEntity("false", ContentType.create("text/plain", "UTF-8"));	
-		response.setEntity(entity);	
-		}
-
-}
-
-
-
-
-
-function getAllCategories(POST,response){
-
-					var result = category.query("get all");
-					var entity = new NStringEntity(DBTable.toCSV(result), ContentType.create("text/plain", "UTF-8"));	
-					response.setEntity(entity);	
-
-}
-
-
-
+/** Delete a comment
+*/
 function deleteComment(POST, response){
 
 
@@ -284,6 +310,8 @@ function deleteComment(POST, response){
 }
 
 
+/** Get all comments on a image
+*/
 function getComments(POST, response){
 
 
@@ -311,6 +339,9 @@ function getComments(POST, response){
 
 }
 
+
+/** Add a comment to image
+*/
 function addComment(POST, response){
 
 				try{
@@ -341,14 +372,12 @@ function addComment(POST, response){
 }
 
 
-// not yet implemented
-function rotateImage(POST, response){
-				var entity = new NStringEntity("false", ContentType.create("text/plain", "UTF-8"));	
-				response.setEntity(entity);		
 
-}
+//// SEARCH FUNCTIONS ////
 
-
+/** Return all images that matches the search query
+* Search on imagename, metadata, tags and folder
+*/
 function searchImages(POST, response){
 
 	try{
@@ -377,6 +406,11 @@ function searchImages(POST, response){
 }
 
 
+
+//// METADATA FUNCTIONS ////
+
+/** Return all metadata on a selected Image
+*/
 function getMetadata(POST, response){
 
 
@@ -406,6 +440,8 @@ function getMetadata(POST, response){
 }
 
 
+/** Update a metadata tag by key
+*/
 function updateMetadata(POST, response){
 
 
@@ -438,6 +474,8 @@ function updateMetadata(POST, response){
 }
 
 
+/** Delete a metadata tag by key
+*/
 function deleteMetadata(POST, response){
 
 
@@ -470,8 +508,11 @@ function deleteMetadata(POST, response){
 }
 
 
+//// IMAGE FUNCTIONS ////
 
-
+/** Return all images if category is not set.
+* Else it returns all images in the set category
+*/
 function handleGetAll(POST,response){
 
 				if(POST.isset("category")){
@@ -490,6 +531,9 @@ function handleGetAll(POST,response){
 
 }
 
+
+/** Upload a image
+*/
 function handleUpload(POST,response){
 
 		
@@ -542,10 +586,10 @@ function handleUpload(POST,response){
 }
 
 
+/** Update a image
+*/
 function updateImage(POST,response){
 
-	
-	
 	try{
 	
 			
@@ -601,6 +645,8 @@ function updateImage(POST,response){
 }
 
 
+/** Delete a image
+*/
 function handleDelete(POST,response){
 
 	
@@ -630,18 +676,27 @@ function handleDelete(POST,response){
 }
 
 
+
+//// UTILITY FUNCTIONS ////
+
+/** Return the file suffix
+*/
 function getFileType(fname){
 
 return fname.substr((~-fname.lastIndexOf(".") >>> 0) + 2);
 }
 
+/** Handles login and sessionID
+* @Unused
+*/
 function handleLogin(response, POST) {
-	
-	// check uname and pw against database, and check for bruteforce
 		
 	handler.setCookie(response);	
 }
 
+
+/** get the date and time in the proper format
+*/
 function getDateTime() {
     var now     = new Date(); 
     var year    = now.getFullYear();
@@ -669,24 +724,17 @@ function getDateTime() {
     return dateTime;
 }
 
+/** Error handler
+*/
 function handleError(err,response){
 
 	MainFrame.print("ERROR: "+err.message);
 	var entity = new NStringEntity("error", ContentType.create("text/plain", "UTF-8"));	
 	response.setEntity(entity);		
-	
 }
 
+// Add the requesthandler as the uniform handler
 MainFrame.addUniformHandler(handler);
 
-		// MainFrame.addHandler(handler,"/test.js");
-
-
-		//	response.setStatusCode(HttpStatus.SC_OK);			
-			
-		//	var entity = new NStringEntity("<html><body><h1>Error</h1></body></html>", ContentType.create("text/html", "UTF-8"));
-			
-		//	MainFrame.getCommandHandler().execute("console print \"A connection has appeared!\"");
-		//	response.setEntity(entity);	
-		
-		
+// Add the requesthandler as a specific handler
+// MainFrame.addHandler(handler,"/gruppec.js");

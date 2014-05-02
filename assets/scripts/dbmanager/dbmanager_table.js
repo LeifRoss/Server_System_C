@@ -153,7 +153,6 @@ function saveTable(name){
 var table3 = DBHandler.get(name);
 var struct = "";
 
-//var size = table3.getNumberOfColumns();
 
 	for(var i = 0; i < size; i++){
 	
@@ -183,8 +182,7 @@ var struct = "";
 	
 }	
 
-	//MainFrame.print(struct);
-//table3.setName(name);	
+
 table3.setStruct(struct);
 table3.dropTable();
 table3.init();

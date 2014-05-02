@@ -1,7 +1,10 @@
-include "boot;boot.js;Set boot script"
-execute "database.js"
-execute "request.js"
+execute "gruppec/database.js"
+execute "gruppec/request.js"
 execute "user_interface.js"
-console print "config finished"
+remote ssh start
+remote sftp start
+server start
+execute "gruppec/autoupload.js"
+
 
 
