@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -24,40 +25,66 @@ public class DBHandler {
 
 
 	private static final String DATABASE_LOCATION = "jdbc:sqlite:"+Util.getAssetsLocation()+"config//database.db";
+	private static final String CONFIG_POOL = "database_pooling";
 	private static Connection connection;
 	private static HashMap<String,DBTable> tables;
+	private static ConcurrentHashMap<Long,Connection> connection_pool;
 	private static CommandRouter router;
+	private static boolean pooling_enabled;
 
 	public static void init(){
 
 		try {
 			Class.forName("org.sqlite.JDBC");
-		} catch (ClassNotFoundException e1) {
-			e1.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
 		}
 
 		connection = null;
 		try {
-
 			connection = DriverManager.getConnection(DATABASE_LOCATION);
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 
 		tables = new HashMap<String,DBTable>();		
 
+		String chk_pool = MainFrame.readConfig(CONFIG_POOL);
+
+		if(chk_pool != null && !chk_pool.isEmpty() && chk_pool.contains("true")){
+
+			pooling_enabled = true;
+			connection_pool = new ConcurrentHashMap<Long,Connection>();
+		}
+
 		buildRouter();
 	}
 
 
+	/**
+	 * Releases all resources held by the handler
+	 */
 	public static void destroy(){
 
 		try {
 
+			for(DBTable table: tables.values()){
+				if(table != null){
+					table.destroy();
+				}
+			}
+
 			if(connection!=null){
 				connection.close();
 			}
+
+			if(pooling_enabled){
+
+				for(Connection c: connection_pool.values()){
+					c.close();
+				}
+			}
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -65,7 +92,38 @@ public class DBHandler {
 	}
 
 
+	/**
+	 * Return the connection belonging to the current thread
+	 * @return
+	 */
 	public static Connection getConnection(){
+
+		if(!pooling_enabled){
+			return connection;
+		}
+
+
+		Long thread_id = Thread.currentThread().getId();
+
+		if(connection_pool.containsKey(thread_id)){
+			return connection_pool.get(thread_id);
+		}
+
+		Connection nConnection = null;
+
+		try {
+			nConnection = DriverManager.getConnection(DATABASE_LOCATION);
+			connection_pool.put(thread_id, nConnection);
+			MainFrame.log("Database connection["+thread_id+"] established", false);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			MainFrame.error(e.getMessage());
+		}
+
+		if(nConnection != null){
+			return nConnection;
+		}
+
 		return connection;
 	}
 
@@ -77,10 +135,12 @@ public class DBHandler {
 		}
 	}
 
+
 	public static void add(DBTable table){
 
 		tables.put(table.name(), table);
 	}
+
 
 	public static DBTable get(String table){
 
@@ -142,7 +202,6 @@ public class DBHandler {
 
 	public static void query(String in){
 
-
 		if(connection==null){
 			return;
 		}
@@ -200,43 +259,89 @@ public class DBHandler {
 			MainFrame.print("DATABASE UPDATE: "+resultcode);
 
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 
 
-
+	/**
+	 * Begins a transaction
+	 */
 	public static void beginTransaction(){
 
-		if(connection==null){
+		Connection tConnection = getConnection();
+
+		if(tConnection == null){
 			return;
 		}
 
 		try {
-			connection.setAutoCommit(false);
+			tConnection.setAutoCommit(false);
 		} catch (SQLException e) {
 			e.printStackTrace();
+			MainFrame.error("Begin: "+e.getMessage());
 		}
 
 	}
 
+
+	/**
+	 * Commits the current transaction
+	 */
 	public static void commitTransaction(){
 
-		if(connection==null){
+		Connection tConnection = getConnection();
+
+		if(tConnection==null){
 			return;
 		}
 
 		try {
-			connection.setAutoCommit(true);
+			tConnection.commit();
 		} catch (SQLException e) {
+
 			e.printStackTrace();
+			MainFrame.error("Commit: "+e.getMessage());		
+		}finally{
+
+			try {
+				tConnection.setAutoCommit(true);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
 
-	
+
+	/**
+	 * Aborts the current transaction
+	 */
+	public static void abortTransaction(){
+
+		Connection tConnection = getConnection();
+
+		if(tConnection==null){
+			return;
+		}
+
+		try {
+			tConnection.rollback();
+		} catch (SQLException e) {
+
+			e.printStackTrace();
+			MainFrame.error("Rollback: "+e.getMessage());		
+		}finally{
+
+			try {
+				tConnection.setAutoCommit(true);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
 	/**
 	 * Check if a table exists in the database
 	 * @param name
@@ -271,7 +376,6 @@ public class DBHandler {
 				e.printStackTrace();
 			}
 		}
-
 
 		return exists;
 	}

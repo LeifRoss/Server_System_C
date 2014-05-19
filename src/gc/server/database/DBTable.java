@@ -3,15 +3,12 @@ package gc.server.database;
 
 import gc.server.com.MainFrame;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
-
 
 
 /**
@@ -25,8 +22,7 @@ public class DBTable {
 
 
 	private String name, struct;
-	private HashMap<String,PreparedStatement> statements;
-	private PreparedStatement pragma;
+	private StatementCache cache;
 	private int number_columns;
 
 
@@ -64,25 +60,11 @@ public class DBTable {
 
 	public void init(){
 
-		statements = new HashMap<String,PreparedStatement>();
-
-		Connection connection = DBHandler.getConnection();
-
+		cache = new StatementCache();
 
 		String[] columns = struct().split(",");
 		number_columns = columns.length;
 
-
-		try {
-
-			connection.setAutoCommit(false);
-			pragma = connection.prepareStatement("pragma table_info ("+name()+")");
-			connection.setAutoCommit(true);
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			MainFrame.print(e.getMessage());
-		}
 
 		DBHandler.add(this);
 	}
@@ -174,27 +156,25 @@ public class DBTable {
 
 
 	/**
-	 * 
+	 * Pragma table info
 	 * @return
 	 */
 	public String[][] pragma(){
 
-		if(DBHandler.getConnection()==null || pragma==null){
+		if(DBHandler.getConnection() == null){
 			return null;
 		}
 
 		String[][] data = null;
 
 		try {
-
-
-			ResultSet result = pragma.executeQuery();
+			
+			Statement s = DBHandler.getConnection().createStatement();
+			ResultSet result = s.executeQuery("pragma table_info ("+name()+")");
 			data = toTable(result);
 			result.close();
 
-
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -215,28 +195,30 @@ public class DBTable {
 	 * @param id
 	 * @param params
 	 */
-	public void update(String id, String... params){
+	public boolean update(String id, String... params){
 
-		if(DBHandler.getConnection()==null || !statements.containsKey(id)){
-			return;
+		if(DBHandler.getConnection() == null || !cache.contains(id)){
+			return false;
 		}
 
 		try {
 
-			PreparedStatement statement = statements.get(id);
-
+			
+			PreparedStatement statement = cache.get(id);
+			
 			for(int i = 0; i < params.length; i++){
 				statement.setObject(i+1, params[i]);
 			}
-
+			
 			statement.executeUpdate();
 
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			MainFrame.print(e.getMessage());
+			MainFrame.print("Update: "+e.getMessage());
+			return false;
 		}			
 
+		return true;
 	}
 
 
@@ -300,13 +282,13 @@ public class DBTable {
 	 */
 	public String[][] query(String id, String... params){
 
-		if(DBHandler.getConnection()==null || !statements.containsKey(id)){
+		if(DBHandler.getConnection()==null || !cache.contains(id)){
 			return null;
 		}
 
 		try {
 
-			PreparedStatement statement = statements.get(id);
+			PreparedStatement statement = cache.get(id);
 
 			for(int i = 0; i < params.length; i++){
 				statement.setObject(i+1, params[i]);
@@ -335,24 +317,19 @@ public class DBTable {
 	 */
 	public void createSQL(String id, String query){
 
-
-		if(DBHandler.getConnection()==null){
+		if(DBHandler.getConnection() == null){
 			return;
 		}
 
-		try {
-
-			PreparedStatement statement = DBHandler.getConnection().prepareStatement(query);
-			statements.put(id, statement);		
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			MainFrame.print(e.getMessage());
-		}
-
-
+		cache.create(id, query);		
 	}
 
+	public void destroy(){
+		
+		cache.destroy();
+		
+	}
+	
 
 	/**
 	 * Convert a result set to a String table
@@ -451,5 +428,6 @@ public class DBTable {
 
 		return str.toString();
 	}
+	
 
 }

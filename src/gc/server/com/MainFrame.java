@@ -226,7 +226,7 @@ public class MainFrame {
 		System.exit(0);
 	}
 
-
+	
 	public static void restart(){
 
 
@@ -262,6 +262,17 @@ public class MainFrame {
 		execute("console error \""+in+"\"");	
 	}
 
+	/**
+	 * Todo: this!!
+	 * @param in
+	 * @param persistent
+	 */
+	public synchronized static void log(String in, boolean persistent){
+		
+	
+	}
+
+	
 	public static void execute(String in){
 		
 		getCommandHandler().execute(in);		

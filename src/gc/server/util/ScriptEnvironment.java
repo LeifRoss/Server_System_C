@@ -104,7 +104,7 @@ public class ScriptEnvironment implements Runnable{
 
 		cx.setGeneratingDebug(MainFrame.isDebug());
 		cx.setGeneratingSource(MainFrame.isDebug());
-		cx.setOptimizationLevel(2);
+		cx.setOptimizationLevel(4);
 
 		
 		Require require = global.installRequire(cx, modulePaths, false);		

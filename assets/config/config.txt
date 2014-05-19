@@ -4,3 +4,4 @@ thread_pool_size 4
 network_discovery true
 request_handler_override true
 timeout 5000
+database_pooling true

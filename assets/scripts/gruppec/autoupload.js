@@ -77,7 +77,6 @@ function stop(){
 		running = false;
 		key.cancel();
 		
-		MainFrame.print("Autoupload cancelled");
 	}else{
 		MainFrame.error("No autoupload process running");
 	}
@@ -120,7 +119,7 @@ function upload(file,folder){
 			
 			
 			file.renameTo(new File(Util.getAssetsLocation()+"webroot/",imagepath));
-			//handler.saveFile(imagepath, data);
+
 			handler.createThumbnail(128,128,data,thumbnail);
 			
 			DBHandler.commitTransaction();
@@ -196,13 +195,21 @@ function eventListener(){
     }
 }
 
+		MainFrame.print("Autoupload cancelled");
+
 }
 
 
 function scan(file,folder){
 
 	if(file.isFile()){
-		upload(file,folder);
+		
+		try{
+			upload(file,folder);
+		}catch(err){
+			MainFrame.error(err.message);
+		}
+		
 		return;
 	}
 	
