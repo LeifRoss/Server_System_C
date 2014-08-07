@@ -49,7 +49,7 @@ public class Main {
 
 	
 	private static void initMASTER(){
-
+		
 		MainFrame.initMainFrame();
 	}
 

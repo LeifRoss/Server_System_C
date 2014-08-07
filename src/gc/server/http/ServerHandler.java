@@ -1,15 +1,23 @@
 package gc.server.http;
 
+import gc.server.com.MainFrame;
+import gc.server.gui.GUIHandler;
+import gc.server.util.CommandRouter;
+import gc.server.util.Util;
+
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+
+import javax.swing.JOptionPane;
 
 import org.apache.http.HttpRequest;
 import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
 import org.apache.http.nio.reactor.IOReactorException;
 
 import connectivity.httpserver.HttpServer;
-import gc.server.com.MainFrame;
-import gc.server.gui.GUIHandler;
-import gc.server.util.CommandRouter;
 
 /**
  * 
@@ -21,12 +29,18 @@ import gc.server.util.CommandRouter;
 public class ServerHandler {
 
 
+	private static final String SSL_KEY = "ssl_key";
+	private static final String SSL_PW = "ssl_password";
 
 	private int port;
 	private int timeout;
 	private int pool_size;
 	private boolean override;
 	private boolean enable_discovery;
+	private boolean https;
+	
+	private char[] https_pw;
+	private URL https_url;
 
 	private HttpServer server;
 	private ServerRequestHandler request_handler;
@@ -59,8 +73,16 @@ public class ServerHandler {
 				request_handler = null;
 			}
 
-			server = new HttpServer(port,request_handler,false,server_logger,null,null,timeout,pool_size);		
-
+			String chk_https = MainFrame.readConfig("https");
+			
+			if(chk_https != null && !chk_https.isEmpty() && chk_https.contains("true")){
+			
+				https = true;
+				readHttpsData();
+			}
+			
+			server = new HttpServer(port,request_handler,https,server_logger, https_url, https_pw, timeout,pool_size);		
+			
 			buildRouter();
 
 
@@ -73,7 +95,45 @@ public class ServerHandler {
 	}
 
 
-
+	private void readHttpsData(){
+		
+		// read keystore
+		
+		String ssl_key = MainFrame.readConfig(SSL_KEY);
+		
+		if(ssl_key == null || ssl_key.isEmpty()){
+			https = false;
+			return;
+		}	
+		
+		
+		File f = new File(Util.getAssetsLocation()+ssl_key);
+		URI bufferURI = f.toURI();
+		
+		try {
+			https_url = bufferURI.toURL();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			https = false;
+			return;
+		}
+		
+		// read password
+		
+		String ssl_pw = MainFrame.readConfig(SSL_PW);
+		
+		if(ssl_pw == null || ssl_pw.isEmpty()){
+			
+			ssl_pw = JOptionPane.showInputDialog("SSL Password");
+			
+			if(ssl_pw == null || ssl_pw.isEmpty()){
+				https = false;
+				return;
+			}
+		}
+		
+		https_pw = ssl_pw.toCharArray();				
+	}
 
 
 
@@ -144,47 +204,6 @@ public class ServerHandler {
 
 		command_router.addRouter(func);
 
-		/*
-		// pause server
-		func = new CommandRouter("pause");
-		func.setDescription("Pauses the server");
-		func.setFunction(new Runnable(){
-
-			@Override
-			public void run() {
-
-				try {
-					server.pause();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-
-		});
-
-		command_router.addRouter(func);
-
-		// shut down server
-		func = new CommandRouter("resume");
-		func.setDescription("Resumes the server");
-		func.setFunction(new Runnable(){
-
-			@Override
-			public void run() {
-
-				try {
-					server.resume();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-
-		});
-
-		command_router.addRouter(func);
-		 */
 
 		MainFrame.getCommandHandler().getRootRouter().addRouter(command_router);
 
