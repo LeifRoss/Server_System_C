@@ -1,0 +1,85 @@
+10.03.2014
+
+- Version 0.12
+- Bugfixes: Should be able to prompt Util.getAssetsLocation() from external sources now.
+- Autoupload folder support
+- To enable autoupload, start the plugin by typing this in console: execute "autoupload.js"
+
+
+15.03.2014 
+
+- Version 0.14
+- Added Metadata support.
+- Added metadata support to the serverconnector (read / write).
+
+16.03.2014
+
+- Version 0.15
+- Added CommonJS support. (var library = require("userlibrary.js") etc).
+- Changed standard scripting environment from interpreted to compiled mode.
+- Interpreted mode still runs in debug mode. To enter debug mode. Pass in "debug" as the launcher arg0.
+
+
+17.03.2014
+
+- Version 0.151
+- Added TabView to GUIFactory.
+- Changed getAssetsLocation() method, there is a possibility it is unix compliant now.
+- Added addListener(Runnable r) method to GCComponent.
+- Started developing a scripteditor plugin.
+- Added switch to debug mode with the console command: debug "true" / debug "false"
+
+
+18.03.2014
+
+- Version 0.152
+- Fixed bugs when the server was started from a location with a space in the path.
+- Added lots of functions to the request handler. (create,delete,get) category, (update) image.
+- Added string escape by default on the .toCSV method in DBTable
+- Fixed bugs in the database class.
+- Fixed CommonJS bugs.
+- New serverconnector.
+
+
+19.03.2014
+
+- Version 0.152
+- First version of ScriptEditor class added.
+- First version of SyntaxLibrary class added.
+
+
+08.04.2014
+
+- Version 0.160 (Unix Milestone)
+- Tested and verified on Raspberry Pi 
+- New SQLite Driver, which works on multiple platforms.
+
+
+10.04.2014
+
+- Version 0.161 
+- Implemented a workaround for virtual tables, since the new sqlitedriver's support for it is broken.
+
+
+12.04.2014
+
+- Version 0.170 (Remote Management Milestone)
+- SSH and SFTP management is now implemented as standard.
+- Located under <remote>
+- Added usefull management information available under <show>
+
+
+22.04.2014
+
+- Version 0.171
+- Server discovery changed from broadcast to multicast / group
+
+
+18.05.2014
+- Version 0.173
+- Database connection pooling (Enable in config <database_pooling true>)
+- StatementCache.
+- Autoreference on all statements / tables.
+- DBHandler.beginTransaction(), DBHandler.commitTransaction(), DBHandler.abortTransaction(), Optimized.
+
+
